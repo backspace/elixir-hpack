@@ -1,0 +1,112 @@
+defmodule HPack.Table do
+  # use HPack.Table.Static
+
+  @static [
+    {":authority", nil},
+    {":method", "GET"},
+    {":method", "POST"},
+    {":path", "/"},
+    {":path", "/index.html"},
+    {":scheme", "http"},
+    {":scheme", "https"},
+    {":status", "200"},
+    {":status", "204"},
+    {":status", "206"},
+    {":status", "304"},
+    {":status", "400"},
+    {":status", "404"},
+    {":status", "500"},
+    {"accept-charset", nil},
+    {"accept-encoding	gzip, deflate", nil},
+    {"accept-language", nil},
+    {"accept-ranges", nil},
+    {"accept", nil},
+    {"access-control-allow-origin", nil},
+    {"age", nil},
+    {"allow", nil},
+    {"authorization", nil},
+    {"cache-control", nil},
+    {"content-disposition", nil},
+    {"content-encoding", nil},
+    {"content-language", nil},
+    {"content-length", nil},
+    {"content-location", nil},
+    {"content-range", nil},
+    {"content-type", nil},
+    {"cookie", nil},
+    {"date", nil},
+    {"etag", nil},
+    {"expect", nil},
+    {"expires", nil},
+    {"from", nil},
+    {"host", nil},
+    {"if-match", nil},
+    {"if-modified-since", nil},
+    {"if-none-match", nil},
+    {"if-range", nil},
+    {"if-unmodified-since", nil},
+    {"last-modified", nil},
+    {"link", nil},
+    {"location", nil},
+    {"max-forwards", nil},
+    {"proxy-authenticate", nil},
+    {"proxy-authorization", nil},
+    {"range", nil},
+    {"referer", nil},
+    {"refresh", nil},
+    {"retry-after", nil},
+    {"server", nil},
+    {"set-cookie", nil},
+    {"strict-transport-security", nil},
+    {"transfer-encoding", nil},
+    {"user-agent", nil},
+    {"vary", nil},
+    {"via", nil},
+    {"www-authenticate", nil}
+  ]
+
+  def start_link(max_table_size) do
+    Agent.start_link(fn -> %{size: max_table_size, table: []} end)
+  end
+
+  def lookup(idx, table) do
+    dynamic_table = Agent.get(table, &(&1.table))
+    Enum.at(@static ++ dynamic_table, idx - 1, :none)
+  end
+
+  def add({key, value}, table) do
+    Agent.update(table, fn(state) ->
+      %{state | table: state.table ++ [{key, value}]}
+    end)
+  end
+
+  def size(size, table) do
+    Agent.update(table, fn(state) ->
+      %{state | size: size}
+    end)
+    check_size(table)
+  end
+
+  # check table size and evict entries when neccessary
+  defp check_size(table_pid) do
+    Agent.update(table_pid, fn(%{size: size, table: table}) ->
+      new_table = evict(calculate_size(table) > size, table, size)
+      %{size: size, table: new_table}
+    end)
+  end
+
+  defp calculate_size([]), do: 0
+  defp calculate_size(table) do
+    table
+    |> Enum.map(fn({key, value}) -> byte_size(key) + byte_size(value) + 32  end)
+    |> Enum.reduce(fn(x, acc) -> x + acc end)
+  end
+
+  defp evict(true, table, size) do
+    new_table = tl(table)
+    evict(calculate_size(new_table) > size, new_table, size)
+  end
+
+  defp evict(false, table, size), do: table
+
+end
