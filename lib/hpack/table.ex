@@ -76,15 +76,19 @@ defmodule HPack.Table do
 
   def add({key, value}, table) do
     Agent.update(table, fn(state) ->
-      %{state | table: state.table ++ [{key, value}]}
+      %{state | table: [ {key, value} | state.table ]}
     end)
   end
 
-  def size(size, table) do
+  def resize(size, table) do
     Agent.update(table, fn(state) ->
       %{state | size: size}
     end)
     check_size(table)
+  end
+
+  def size(table) do
+    Agent.get(table, &(calculate_size(&1.table)))
   end
 
   # check table size and evict entries when neccessary

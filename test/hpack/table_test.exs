@@ -19,10 +19,17 @@ defmodule HPack.TableTest do
     assert header = Table.lookup(62, table)
   end
 
+  test "adds to dynamic table at the end", %{table: table} do
+    second_header = {"some-header-2", "some-value-2"}
+    Table.add({"some-header", "some-value"}, table)
+    Table.add(second_header, table)
+    assert second_header = Table.lookup(63, table)
+  end
+
   test "evict entries on table size change", %{table: table} do
     header = {"some-header", "some-value"}
     Table.add(header, table)
-    Table.size(0, table) # evict all entries in dynamic tab
+    Table.resize(0, table) # evict all entries in dynamic table
     assert :none = Table.lookup(62, table)
   end
 
