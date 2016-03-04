@@ -28,7 +28,6 @@ defmodule Hpack.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:huffman, "~> 1.1"}
     ]
   end
 end
