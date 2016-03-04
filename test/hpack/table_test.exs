@@ -33,4 +33,16 @@ defmodule HPack.TableTest do
     assert :none = Table.lookup(62, table)
   end
 
+  test "evict oldest entries when size > table size", %{table: table} do
+    Table.resize(55, table)
+
+    third_header = {"some-header-3", "some-value-3"}
+    Table.add({"some-header", "some-value"}, table)
+    Table.add({"some-header-2", "some-value-2"}, table)
+    Table.add(third_header, table)
+
+    assert third_header = Table.lookup(62, table)
+    assert :none = Table.lookup(63, table)
+  end
+
 end

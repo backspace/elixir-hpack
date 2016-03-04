@@ -78,6 +78,7 @@ defmodule HPack.Table do
     Agent.update(table, fn(state) ->
       %{state | table: [ {key, value} | state.table ]}
     end)
+    check_size(table)
   end
 
   def resize(size, table) do
@@ -107,7 +108,7 @@ defmodule HPack.Table do
   end
 
   defp evict(true, table, size) do
-    new_table = tl(table)
+    new_table = List.delete_at(table, length(table) - 1)
     evict(calculate_size(new_table) > size, new_table, size)
   end
 
