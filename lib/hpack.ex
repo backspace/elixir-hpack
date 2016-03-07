@@ -19,7 +19,7 @@ defmodule HPack do
     [{":method", "GET"}]
 
   """
-  @spec decode(String.t, pid) :: List
+  @spec decode(String.t, pid) :: [{String.t, String.t}]
   def decode(hbf, table) do
     parse(hbf, [], table)
   end
