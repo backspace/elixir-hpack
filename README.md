@@ -7,7 +7,6 @@ Implementation of the [HPack](https://http2.github.io/http2-spec/compression.htm
 This implementation is heavily work in progress! :warning:
 
 The following features needs to be implemented:
-- integers > index (Index+)
 - encoding of
   - headers
   - huffman
