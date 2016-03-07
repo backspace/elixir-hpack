@@ -1,4 +1,4 @@
-# HPack (RFC 7541)
+# HPack (RFC 7541) [![Build Status](https://travis-ci.org/nesQuick/elixir-hpack.svg?branch=master)](https://travis-ci.org/nesQuick/elixir-hpack)
 
 Implementation of the [HPack](https://http2.github.io/http2-spec/compression.html) protocol, a compression format for efficiently representing HTTP header fields, to be used in HTTP/2.
 
