@@ -1,5 +1,4 @@
 defmodule HPack.Table do
-  # use HPack.Table.Static
 
   @static [
     {":authority", nil},
