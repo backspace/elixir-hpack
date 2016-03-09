@@ -1,5 +1,5 @@
 defmodule HPack.RFCSpec.DecodeTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import RFCBinaries
 
   setup do
