@@ -45,4 +45,21 @@ defmodule HPack.TableTest do
     assert :none == Table.lookup(63, table)
   end
 
+  test "find a key with corresponding value from static table", %{table: table} do
+    assert Table.find(":method", "GET", table) == { :fullindex, 2 }
+  end
+
+  test "find a key without corresponding value from static table", %{table: table} do
+    assert Table.find("etag", "1e2345678", table) == { :keyindex, 34 }
+  end
+
+  test "return :none when key not found in table", %{table: table} do
+    assert Table.find("x-something", "some-value", table) == { :none }
+  end
+
+  test "find a key with corresponding value from dynamic table", %{table: table} do
+    Table.add({"x-something", "some-value"}, table)
+    assert Table.find("x-something", "some-value", table) == { :fullindex, 62 }
+  end
+
 end

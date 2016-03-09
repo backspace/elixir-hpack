@@ -69,8 +69,17 @@ defmodule HPack.Table do
   end
 
   def lookup(idx, table) do
-    dynamic_table = Agent.get(table, &(&1.table))
-    Enum.at(@static ++ dynamic_table, idx - 1, :none)
+    Enum.at(full_table(table), idx - 1, :none)
+  end
+
+  def find(key, value, table) do
+    match_on_key_and_value = Enum.find_index(full_table(table), fn({ck, cv}) -> ck == key && cv == value end)
+    match_on_key = Enum.find_index(full_table(table), fn({ck, _}) -> ck == key end)
+    cond do
+      match_on_key_and_value != nil -> {:fullindex, match_on_key_and_value + 1}
+      match_on_key != nil -> {:keyindex, match_on_key + 1}
+      true -> {:none}
+    end
   end
 
   def add({key, value}, table) do
@@ -111,6 +120,8 @@ defmodule HPack.Table do
     evict(calculate_size(new_table) > size, new_table, size)
   end
 
-  defp evict(false, table, size), do: table
+  defp evict(false, table, _), do: table
+
+  defp full_table(table), do: @static ++ Agent.get(table, &(&1.table))
 
 end
