@@ -1,5 +1,6 @@
 defmodule HPack.RFCSpec.DecodeTest do
   use ExUnit.Case
+  import RFCBinaries
 
   setup do
     {:ok, table} = HPack.Table.start_link 10000
@@ -9,12 +10,10 @@ defmodule HPack.RFCSpec.DecodeTest do
   # C.2.1 Literal Header Field with Indexing
   @tag :rfc
   test "Literal Header Field with Indexing", %{table: table} do
-    hbf = <<
-      0x40, 0x0a, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d,
-      0x2d, 0x6b, 0x65, 0x79, 0x0d, 0x63, 0x75, 0x73,
-      0x74, 0x6f, 0x6d, 0x2d, 0x68, 0x65, 0x61, 0x64,
-      0x65, 0x72
-    >> # @.custom-key.custom-header
+    hbf = ~b(
+      400a 6375 7374 6f6d 2d6b 6579 0d63 7573 | @.custom-key.cus
+      746f 6d2d 6865 6164 6572                | tom-header
+    )
 
     [ decoded_header | _ ] = HPack.decode(hbf, table)
     assert decoded_header == { "custom-key", "custom-header" }
@@ -24,10 +23,7 @@ defmodule HPack.RFCSpec.DecodeTest do
   # C.2.2 Literal Header Field without Indexing
   @tag :rfc
   test "Literal Header Field without Indexing", %{table: table} do
-    hbf = <<
-      0x04, 0x0c, 0x2f, 0x73, 0x61, 0x6d, 0x70, 0x6c,
-      0x65, 0x2f, 0x70, 0x61, 0x74, 0x68
-    >> # | @.custom-key.cus
+    hbf = ~b(040c 2f73 616d 706c 652f 7061 7468      | ../sample/path)
 
     [ decoded_header | _ ] = HPack.decode(hbf, table)
     assert decoded_header == { ":path", "/sample/path" }
@@ -37,11 +33,10 @@ defmodule HPack.RFCSpec.DecodeTest do
   # C.2.3 Literal Header Field Never Indexed
   @tag :rfc
   test "Literal Header Field Never Indexed", %{table: table} do
-    hbf = <<
-      0x10, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f,
-      0x72, 0x64, 0x06, 0x73, 0x65, 0x63, 0x72, 0x65,
-      0x74
-    >> # | ..password.secret
+    hbf = ~b(
+      1008 7061 7373 776f 7264 0673 6563 7265 | ..password.secre
+      74                                      | t
+    )
 
     [ decoded_header | _ ] = HPack.decode(hbf, table)
     assert decoded_header == { "password", "secret" }
@@ -51,7 +46,7 @@ defmodule HPack.RFCSpec.DecodeTest do
   # C.2.4 Indexed Header Field
   @tag :rfc
   test "Indexed Header Field", %{table: table} do
-    hbf = << 0x82 >> # | .
+    hbf = ~b(82 | .)
 
     [ decoded_header | _ ] = HPack.decode(hbf, table)
     assert decoded_header == { ":method", "GET" }
@@ -62,11 +57,10 @@ defmodule HPack.RFCSpec.DecodeTest do
   @tag :rfc
   test "Request Examples without Huffman Coding", %{table: table} do
     # C.3.1 First Request
-    hbf = <<
-      0x82, 0x86, 0x84, 0x41, 0x0f, 0x77, 0x77, 0x77,
-      0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65,
-      0x2e, 0x63, 0x6f, 0x6d
-    >> # | ...A.www.example.com
+    hbf = ~b(
+      8286 8441 0f77 7777 2e65 7861 6d70 6c65 | ...A.www.example
+      2e63 6f6d                               | .com
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -77,10 +71,9 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 57
 
     # C.3.2 Second Request
-    hbf = <<
-      0x82, 0x86, 0x84, 0xbe, 0x58, 0x08, 0x6e, 0x6f,
-      0x2d, 0x63, 0x61, 0x63, 0x68, 0x65
-    >> # | ....X.no-cache
+    hbf = ~b(
+      8286 84be 5808 6e6f 2d63 6163 6865      | ....X.no-cache
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -92,12 +85,10 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 110
 
     # C.3.3 Third Request
-    hbf = <<
-      0x82, 0x87, 0x85, 0xbf, 0x40, 0x0a, 0x63, 0x75,
-      0x73, 0x74, 0x6f, 0x6d, 0x2d, 0x6b, 0x65, 0x79,
-      0x0c, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x2d,
-      0x76, 0x61, 0x6c, 0x75, 0x65
-    >> # | ....@.custom-key.custom-value
+    hbf = ~b(
+      8287 85bf 400a 6375 7374 6f6d 2d6b 6579 | ....@.custom-key
+      0c63 7573 746f 6d2d 7661 6c75 65        | .custom-value
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -113,11 +104,10 @@ defmodule HPack.RFCSpec.DecodeTest do
   @tag :rfc
   test "Request Examples with Huffman Coding", %{table: table} do
     # C.4.1 First Request
-    hbf = <<
-      0x82, 0x86, 0x84, 0x41, 0x8c, 0xf1, 0xe3, 0xc2,
-      0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4,
-      0xff
-    >> # | ...A......:k....
+    hbf = ~b(
+      8286 8441 8cf1 e3c2 e5f2 3a6b a0ab 90f4 | ...A......:k....
+      ff                                      | .
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -128,10 +118,9 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 57
 
     # C.4.2 Second Request
-    hbf = <<
-      0x82, 0x86, 0x84, 0xbe, 0x58, 0x86, 0xa8, 0xeb,
-      0x10, 0x64, 0x9c, 0xbf
-    >> # | ....X....d..
+    hbf = ~b(
+      8286 84be 5886 a8eb 1064 9cbf           | ....X....d..
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -143,11 +132,10 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 110
 
     # C.4.3 Third Request
-    hbf = <<
-      0x82, 0x87, 0x85, 0xbf, 0x40, 0x88, 0x25, 0xa8,
-      0x49, 0xe9, 0x5b, 0xa9, 0x7d, 0x7f, 0x89, 0x25,
-      0xa8, 0x49, 0xe9, 0x5b, 0xb8, 0xe8, 0xb4, 0xbf
-    >> # | ....@.%.I.[.}..%.I.[....
+    hbf = ~b(
+      8287 85bf 4088 25a8 49e9 5ba9 7d7f 8925 | ....@.%.I.[.}..%
+      a849 e95b b8e8 b4bf                     | .I.[....
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":method", "GET" },
@@ -165,17 +153,13 @@ defmodule HPack.RFCSpec.DecodeTest do
     HPack.Table.resize 256, table
 
     # C.5.1 First Response
-    hbf = <<
-      0x48, 0x03, 0x33, 0x30, 0x32, 0x58, 0x07, 0x70,
-      0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x61, 0x1d,
-      0x4d, 0x6f, 0x6e, 0x2c, 0x20, 0x32, 0x31, 0x20,
-      0x4f, 0x63, 0x74, 0x20, 0x32, 0x30, 0x31, 0x33,
-      0x20, 0x32, 0x30, 0x3a, 0x31, 0x33, 0x3a, 0x32,
-      0x31, 0x20, 0x47, 0x4d, 0x54, 0x6e, 0x17, 0x68,
-      0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x77,
-      0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70,
-      0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d
-    >> # | H.302X.privatea.Mon, 21 Oct 2013 20:13:21 GMTn.https://www.example.com
+    hbf = ~b(
+      4803 3330 3258 0770 7269 7661 7465 611d | H.302X.privatea.
+      4d6f 6e2c 2032 3120 4f63 7420 3230 3133 | Mon, 21 Oct 2013
+      2032 303a 3133 3a32 3120 474d 546e 1768 |  20:13:21 GMTn.h
+      7474 7073 3a2f 2f77 7777 2e65 7861 6d70 | ttps://www.examp
+      6c65 2e63 6f6d                          | le.com
+    )
 
     assert HPack.decode(hbf, table) == [
       {":status", "302"},
@@ -186,9 +170,9 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 222
 
     # C.5.2 Second Response
-    hbf = <<
-      0x48, 0x03, 0x33, 0x30, 0x37, 0xc1, 0xc0, 0xbf
-    >> # | H.307...
+    hbf = ~b(
+      4803 3330 37c1 c0bf                     | H.307...
+    )
 
     assert HPack.decode(hbf, table) == [
       {":status", "307"},
@@ -199,21 +183,15 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 222
 
     # C.5.3 Third Response
-    hbf = <<
-      0x88, 0xc1, 0x61, 0x1d, 0x4d, 0x6f, 0x6e, 0x2c,
-      0x20, 0x32, 0x31, 0x20, 0x4f, 0x63, 0x74, 0x20,
-      0x32, 0x30, 0x31, 0x33, 0x20, 0x32, 0x30, 0x3a,
-      0x31, 0x33, 0x3a, 0x32, 0x32, 0x20, 0x47, 0x4d,
-      0x54, 0xc0, 0x5a, 0x04, 0x67, 0x7a, 0x69, 0x70,
-      0x77, 0x38, 0x66, 0x6f, 0x6f, 0x3d, 0x41, 0x53,
-      0x44, 0x4a, 0x4b, 0x48, 0x51, 0x4b, 0x42, 0x5a,
-      0x58, 0x4f, 0x51, 0x57, 0x45, 0x4f, 0x50, 0x49,
-      0x55, 0x41, 0x58, 0x51, 0x57, 0x45, 0x4f, 0x49,
-      0x55, 0x3b, 0x20, 0x6d, 0x61, 0x78, 0x2d, 0x61,
-      0x67, 0x65, 0x3d, 0x33, 0x36, 0x30, 0x30, 0x3b,
-      0x20, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
-      0x3d, 0x31
-    >> # | ..a.Mon, 21 Oct2013 20:13:22 GMT.Z.gzipw8foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1
+    hbf = ~b(
+      88c1 611d 4d6f 6e2c 2032 3120 4f63 7420 | ..a.Mon, 21 Oct
+      3230 3133 2032 303a 3133 3a32 3220 474d | 2013 20:13:22 GM
+      54c0 5a04 677a 6970 7738 666f 6f3d 4153 | T.Z.gzipw8foo=AS
+      444a 4b48 514b 425a 584f 5157 454f 5049 | DJKHQKBZXOQWEOPI
+      5541 5851 5745 4f49 553b 206d 6178 2d61 | UAXQWEOIU; max-a
+      6765 3d33 3630 303b 2076 6572 7369 6f6e | ge=3600; version
+      3d31                                    | =1
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":status", "200" },
@@ -232,15 +210,12 @@ defmodule HPack.RFCSpec.DecodeTest do
     HPack.Table.resize 256, table
 
     # C.6.1 First Response
-    hbf = <<
-      0x48, 0x82, 0x64, 0x02, 0x58, 0x85, 0xae, 0xc3,
-      0x77, 0x1a, 0x4b, 0x61, 0x96, 0xd0, 0x7a, 0xbe,
-      0x94, 0x10, 0x54, 0xd4, 0x44, 0xa8, 0x20, 0x05,
-      0x95, 0x04, 0x0b, 0x81, 0x66, 0xe0, 0x82, 0xa6,
-      0x2d, 0x1b, 0xff, 0x6e, 0x91, 0x9d, 0x29, 0xad,
-      0x17, 0x18, 0x63, 0xc7, 0x8f, 0x0b, 0x97, 0xc8,
-      0xe9, 0xae, 0x82, 0xae, 0x43, 0xd3
-    >> # | H.d.X...w.Ka..z...T.D. .....f...-..n..)...c.........C.
+    hbf = ~b/
+      4882 6402 5885 aec3 771a 4b61 96d0 7abe | H.d.X...w.Ka..z.
+      9410 54d4 44a8 2005 9504 0b81 66e0 82a6 | ..T.D. .....f...
+      2d1b ff6e 919d 29ad 1718 63c7 8f0b 97c8 | -..n..)...c.....
+      e9ae 82ae 43d3                          | ....C.
+    /
 
     assert HPack.decode(hbf, table) == [
       { ":status", "302" },
@@ -251,9 +226,9 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 222
 
     # C.6.2 Second Response
-    hbf = <<
-      0x48, 0x83, 0x64, 0x0e, 0xff, 0xc1, 0xc0, 0xbf
-    >> # | H.d.....
+    hbf = ~b(
+      4883 640e ffc1 c0bf                     | H.d.....
+    )
 
     assert HPack.decode(hbf, table) == [
       { ":status", "307" },
@@ -264,18 +239,13 @@ defmodule HPack.RFCSpec.DecodeTest do
     assert HPack.Table.size(table) == 222
 
     # C.6.3 Third Response
-    hbf = <<
-      0x88, 0xc1, 0x61, 0x96, 0xd0, 0x7a, 0xbe, 0x94,
-      0x10, 0x54, 0xd4, 0x44, 0xa8, 0x20, 0x05, 0x95,
-      0x04, 0x0b, 0x81, 0x66, 0xe0, 0x84, 0xa6, 0x2d,
-      0x1b, 0xff, 0xc0, 0x5a, 0x83, 0x9b, 0xd9, 0xab,
-      0x77, 0xad, 0x94, 0xe7, 0x82, 0x1d, 0xd7, 0xf2,
-      0xe6, 0xc7, 0xb3, 0x35, 0xdf, 0xdf, 0xcd, 0x5b,
-      0x39, 0x60, 0xd5, 0xaf, 0x27, 0x08, 0x7f, 0x36,
-      0x72, 0xc1, 0xab, 0x27, 0x0f, 0xb5, 0x29, 0x1f,
-      0x95, 0x87, 0x31, 0x60, 0x65, 0xc0, 0x03, 0xed,
-      0x4e, 0xe5, 0xb1, 0x06, 0x3d, 0x50, 0x07
-    >> # | ..a..z...T.D. .....f...-...Z....w..........5...[9`..'..6r..'..)...1`e...N...=P.
+    hbf = ~b/
+      88c1 6196 d07a be94 1054 d444 a820 0595 | ..a..z...T.D. ..
+      040b 8166 e084 a62d 1bff c05a 839b d9ab | ...f...-...Z....
+      77ad 94e7 821d d7f2 e6c7 b335 dfdf cd5b | w..........5...[
+      3960 d5af 2708 7f36 72c1 ab27 0fb5 291f | 9`..'..6r..'..).
+      9587 3160 65c0 03ed 4ee5 b106 3d50 07   | ..1`e...N...=P.
+    /
 
     assert HPack.decode(hbf, table) == [
       { ":status", "200" },
