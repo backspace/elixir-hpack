@@ -14,10 +14,11 @@ defmodule HpackTest do
     assert hd(HPack.decode(<< 0x82 >>, table)) == { ":method", "GET" }
   end
 
-  test "decode big number (Index7+)", %{table: table} do
-    Table.resize(1_000_000_000, table) #make it big enough
+  test "decode big number (Index5+)", %{table: table} do
+    Table.resize(1_000_000_000, table) # make it big enough
     1..1337 |> Enum.map(fn(i) -> Table.add({"h-#{i}", "v-#{i}"}, table) end)
 
+    # Maximum Dynamic Table Size Change header to 1337
     hbf = << 0b00111111, 0b10011010, 0b00001010 >>
     headers = HPack.decode(hbf, table)
 
