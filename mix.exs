@@ -1,4 +1,4 @@
-defmodule Hpack.Mixfile do
+defmodule HPack.Mixfile do
   use Mix.Project
 
   def project do

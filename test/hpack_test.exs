@@ -1,4 +1,4 @@
-defmodule HpackTest do
+defmodule HPackTest do
   use ExUnit.Case
 
   alias HPack.Table
