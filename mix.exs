@@ -3,8 +3,9 @@ defmodule HPack.Mixfile do
 
   def project do
     [app: :hpack,
-     version: "0.0.1",
+     version: "1.0.0",
      elixir: "~> 1.2",
+     package: package,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -17,17 +18,16 @@ defmodule HPack.Mixfile do
     [applications: [:logger]]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type "mix help deps" for more examples and options
-  defp deps do
+  defp deps, do: []
+
+  defp package do
     [
+      source_url: "https://github.com/nesQuick/elixir-hpack",
+      description: """
+      Implementation of the [HPack](https://http2.github.io/http2-spec/compression.html) protocol, a compression format for efficiently representing HTTP header fields, to be used in HTTP/2.
+      """,
+      maintainers: ["Ole Michaelis <Ole.Michaelis@gmail.com>"],
+      licenses: ["MIT"],
     ]
   end
 end
