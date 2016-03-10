@@ -18,7 +18,12 @@ defmodule HPack.Mixfile do
     [applications: [:logger]]
   end
 
-  defp deps, do: []
+  defp deps do
+    [
+      {:earmark, "~> 0.1", only: :dev},
+      {:ex_doc, "~> 0.11", only: :dev}
+    ]
+  end
 
   defp package do
     [
