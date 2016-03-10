@@ -9,6 +9,8 @@ This implementation is heavily work in progress! :warning:
 The following features needs to be implemented:
 - encoding of
   - headers
+
+Nice to have:
 - transcoding for intermediaries
 
 ## Installation
