@@ -21,7 +21,8 @@ defmodule HPack.Mixfile do
   defp deps do
     [
       {:earmark, "~> 0.1", only: :dev},
-      {:ex_doc, "~> 0.11", only: :dev}
+      {:ex_doc, "~> 0.11", only: :dev},
+      {:dialyze, only: [:dev, :test]}
     ]
   end
 

@@ -5,3 +5,7 @@ elixir:
 
 otp_release:
   - 18.2.1
+
+script:
+  - mix test
+  - mix dialyze
