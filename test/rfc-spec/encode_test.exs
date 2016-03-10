@@ -60,7 +60,7 @@ defmodule HPack.RFCSpec.EncodeTest do
 
   # C.6 Response Examples with Huffman Coding
   @tag :rfc
-  test "Request Examples with Huffman Coding", %{table: table} do
+  test "Request Examples with Huffman Coding (256 bytes table)", %{table: table} do
     HPack.Table.resize 256, table
 
     # C.6.1 First Response
