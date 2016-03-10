@@ -2,17 +2,6 @@
 
 Implementation of the [HPack](https://http2.github.io/http2-spec/compression.html) protocol, a compression format for efficiently representing HTTP header fields, to be used in HTTP/2.
 
-## Disclosure
-
-This implementation is heavily work in progress! :warning:
-
-The following features needs to be implemented:
-- encoding of
-  - headers
-
-Nice to have:
-- transcoding for intermediaries
-
 ## Installation
 
 :warning: not yet available in Hex :warning:
@@ -34,3 +23,8 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
     [applications: [:hpack]]
   end
   ```
+
+# Feature wishes / Contribute
+
+Nice to have:
+- transcoding for intermediaries

@@ -33,11 +33,11 @@ defmodule HPack do
     encode(headers, hbf <> partial, table)
   end
 
-  defp encode_indexed(index), do: << 1::1, index::7 >>
+  defp encode_indexed(index), do: << 1::1, encode_int7(index)::bitstring >>
   defp encode_literal_indexed(index, value, table) do
     { name, _ } = Table.lookup(index, table)
     Table.add({name, value}, table)
-    << 0::1, 1::1, index::6, encode_string(value)::binary >>
+    << 0::1, 1::1, encode_int6(index)::bitstring, encode_string(value)::binary >>
   end
   defp encode_literal_not_indexed(name, value, table) do
     Table.add({name, value}, table)
@@ -47,8 +47,18 @@ defmodule HPack do
 
   defp encode_string(string) do
     huffman = Huffman.encode(string)
-    << 1::1, byte_size(huffman)::7, huffman::binary >>
+    length = byte_size(huffman)
+    << 1::1, encode_int7(length)::bitstring, huffman::binary >>
   end
+
+  defp encode_int6(i) when i < 0b111111, do: << i::6 >>
+  defp encode_int6(i), do: << 0b111111::6, encode_big_int(i - 0b111111)::bitstring >>
+
+  defp encode_int7(i) when i < 0b1111111, do: << i::7 >>
+  defp encode_int7(i), do: << 0b1111111::7, encode_big_int(i - 0b1111111)::bitstring >>
+
+  defp encode_big_int(i) when i < 0b10000000, do: << 0::1, i::7 >>
+  defp encode_big_int(i), do: << 1::1, i::7,  encode_big_int(i >>> 7)::binary >>
 
   @doc """
   Decodes a `header block fragment` as specified in RFC 7541.
