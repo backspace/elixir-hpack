@@ -7,10 +7,48 @@ defmodule HPack do
 
   use Bitwise
   alias HPack.Huffman
+  alias HPack.Table
 
-  # def transcode(hbf)
-  # def encode([{key, value} | headers ], table)
-  # def encode([{key, value} | [] ], table)
+  @doc """
+  Encodes a list of headers into a `header block fragment` as specified in RFC 7541.
+
+  Returns the `header block fragment`.
+
+  ## Examples
+
+    iex> {:ok, ctx} = HPack.Table.start_link(1000)
+    iex> HPack.encode([{":method", "GET"}], ctx)
+    << 0b10000010 >>
+
+  """
+  def encode(headers, table) when is_list(headers), do: encode(headers, << >>, table)
+
+  defp encode([], hbf, _), do: hbf
+  defp encode([{key, value} | headers ], hbf, table) do
+    partial = case Table.find(key, value, table) do
+      { :fullindex, index } -> encode_indexed(index)
+      { :keyindex, index } -> encode_literal_indexed(index, value, table)
+      { :none } -> encode_literal_not_indexed(key, value, table)
+    end
+    encode(headers, hbf <> partial, table)
+  end
+
+  defp encode_indexed(index), do: << 1::1, index::7 >>
+  defp encode_literal_indexed(index, value, table) do
+    { name, _ } = Table.lookup(index, table)
+    Table.add({name, value}, table)
+    << 0::1, 1::1, index::6, encode_string(value)::binary >>
+  end
+  defp encode_literal_not_indexed(name, value, table) do
+    Table.add({name, value}, table)
+    << 0::1, 1::1, 0::6, encode_string(name)::binary, encode_string(value)::binary >>
+  end
+  # defp encode_literal_never_indexed(key, value)
+
+  defp encode_string(string) do
+    huffman = Huffman.encode(string)
+    << 1::1, byte_size(huffman)::7, huffman::binary >>
+  end
 
   @doc """
   Decodes a `header block fragment` as specified in RFC 7541.
@@ -19,8 +57,8 @@ defmodule HPack do
 
   ## Examples
 
-    iex> {:ok, table} = HPack.Table.start_link(1000)
-    iex> HPack.decode(<< 0x82 >>, table)
+    iex> {:ok, ctx} = HPack.Table.start_link(1000)
+    iex> HPack.decode(<< 0x82 >>, ctx)
     [{":method", "GET"}]
 
   """
@@ -38,7 +76,7 @@ defmodule HPack do
   #  Figure 5: Indexed Header Field
   defp parse(<< 1::1, rest::bitstring >>, headers, table) do
     { index, rest } = parse_int7(rest)
-    parse(rest, [HPack.Table.lookup(index, table) | headers], table)
+    parse(rest, [Table.lookup(index, table) | headers], table)
   end
 
   #   0   1   2   3   4   5   6   7
@@ -57,7 +95,7 @@ defmodule HPack do
   defp parse(<< 0::1, 1::1, 0::6, rest::binary>>, headers, table) do
     { name, rest } = parse_string(rest)
     { value, more_headers } = parse_string(rest)
-    HPack.Table.add({name, value}, table)
+    Table.add({name, value}, table)
     parse(more_headers, [{name, value} | headers], table)
   end
 
@@ -73,8 +111,8 @@ defmodule HPack do
   defp parse(<< 0::1, 1::1, rest::bitstring >>, headers, table) do
     { index, rest } = parse_int6(rest)
     { value, more_headers } = parse_string(rest)
-    { header, _ } = HPack.Table.lookup(index, table)
-    HPack.Table.add({header, value}, table)
+    { header, _ } = Table.lookup(index, table)
+    Table.add({header, value}, table)
     parse(more_headers, [ {header, value} | headers], table)
   end
 
@@ -90,7 +128,7 @@ defmodule HPack do
   defp parse(<< 0::4, rest::bitstring >>, headers, table) do
     { index, rest } = parse_int4(rest)
     { value, more_headers } = parse_string(rest)
-    { header, _ } = HPack.Table.lookup(index, table)
+    { header, _ } = Table.lookup(index, table)
     parse(more_headers, [{ header, value } | headers], table)
   end
 
@@ -144,7 +182,7 @@ defmodule HPack do
   defp parse(<< 0::3, 1::1, rest::bitstring >>, headers, table) do
     { index, rest } = parse_int4(rest)
     { value, more_headers } = parse_string(rest)
-    { header, _ } = HPack.Table.lookup(index, table)
+    { header, _ } = Table.lookup(index, table)
     parse(more_headers, [{ header, value } | headers], table)
   end
 
@@ -155,7 +193,7 @@ defmodule HPack do
   # Figure 12: Maximum Dynamic Table Size Change
   defp parse(<< 0::2, 1::1, rest::bitstring >>, headers, table) do
     {size, rest} = parse_int5(rest)
-    HPack.Table.resize(size, table)
+    Table.resize(size, table)
     parse(rest, headers, table)
   end
 
