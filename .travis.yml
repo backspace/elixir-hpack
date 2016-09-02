@@ -6,9 +6,13 @@ elixir:
 otp_release:
   - 18.2.1
 
+cache:
+  directories:
+  - plt-cache
+
 before_script:
   - ls -a
-  - "[ -f .local.plt ] || mix dialyzer.plt"
+  - "[ -f plt-cache/test-local.plt ] || mix dialyzer.plt"
 
 script:
   - mix test
