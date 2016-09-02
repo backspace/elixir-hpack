@@ -11,6 +11,7 @@ cache:
   - .local.plt
 
 before_script:
+  - ls -a
   - "[ -f .local.plt ] || mix dialyzer.plt"
 
 script:
