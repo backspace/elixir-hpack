@@ -6,10 +6,6 @@ elixir:
 otp_release:
   - 18.2.1
 
-cache:
-  directories:
-  - .local.plt
-
 before_script:
   - ls -a
   - "[ -f .local.plt ] || mix dialyzer.plt"
